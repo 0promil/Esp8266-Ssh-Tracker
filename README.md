@@ -1,4 +1,3 @@
-Overview
 This project uses an ESP8266 microcontroller to create a Wi-Fi access point (AP) where users can connect and enter their Wi-Fi credentials (SSID and password). Once the credentials are provided, the ESP8266 connects to the given network and restarts. This system is useful for situations where you need to set up a device without physical access, such as an IoT device that requires Wi-Fi credentials.
 
 Requirements
@@ -19,9 +18,8 @@ If you haven't already, download and install the Arduino IDE.
 Install ESP8266 Board Package
 Go to the Arduino IDE, click File -> Preferences. In the "Additional Boards Manager URLs" section, add:
 
-bash
-Kopyala
-http://arduino.esp8266.com/stable/package_esp8266com_index.json
+" http://arduino.esp8266.com/stable/package_esp8266com_index.json "
+
 Then go to Tools -> Board -> Boards Manager, search for ESP8266 and install the package.
 
 Install Required Libraries
@@ -43,8 +41,8 @@ Once the ESP8266 is powered on, it will start an access point called SSH_Tracker
 Enter Wi-Fi Credentials
 After connecting to the ESP8266's Wi-Fi, navigate to the following IP address in your browser:
 
-Kopyala
-192.168.4.1
+" 192.168.4.1 "
+
 You will be presented with a page where you can enter your home Wi-Fi SSID and password.
 
 Reconnect
@@ -53,7 +51,8 @@ After entering the credentials, the ESP8266 will attempt to connect to the enter
 Logs
 You can view the logs by navigating to:
 
-arduino
-Kopyala
-http://192.168.4.1/logs
+" http://192.168.4.1/logs "
+
 This will show you any debug information related to the Wi-Fi connection process.
+
+
