@@ -5,6 +5,8 @@
 #include <PubSubClient.h>
 #include <DNSServer.h>
 #include <ESPAsyncTCP.h>
+#include <FS.h>
+#include <LittleFS.h>
 
 const char* apSSID = "SSH_Tracker_Setup";
 const char* apPassword = "12345678";
@@ -12,15 +14,38 @@ DNSServer dnsServer;
 AsyncWebServer server(80);
 WiFiClient espClient;
 PubSubClient client(espClient);
-String logs = "";
 String userSSID = "";
 String userPassword = "";
 String deviceIP = "";
+String sshServerIP = "";
+String sshServerPort = "";
+String sshPassword = "";
 
 void startAP() {
     WiFi.softAP(apSSID, apPassword);
     dnsServer.start(53, "captive.portal", WiFi.softAPIP());
     Serial.println("Access Point Started");
+}
+
+void logSSHConnection(String log) {
+    File logFile = LittleFS.open("/logs.txt", "a");
+    if (logFile) {
+        logFile.println(log);
+        logFile.close();
+    }
+    Serial.println(log);
+}
+
+String getLogs() {
+    File logFile = LittleFS.open("/logs.txt", "r");
+    String logs = "";
+    if (logFile) {
+        while (logFile.available()) {
+            logs += logFile.readStringUntil('\n') + "\n";
+        }
+        logFile.close();
+    }
+    return logs;
 }
 
 String getHtml() {
@@ -34,11 +59,13 @@ String getHtml() {
            "body { font-family: Arial, sans-serif; text-align: center; background-color: #121212; color: white; padding: 20px; }"
            "button { padding: 10px; margin: 10px; border: none; background-color: #008CBA; color: white; font-size: 18px; cursor: pointer; border-radius: 5px; }"
            "button:hover { background-color: #005f73; }"
-           "input, select { padding: 10px; margin: 5px; border-radius: 5px; border: none; }"
+           "input { padding: 10px; margin: 5px; border-radius: 5px; border: none; }"
            "#content { margin-top: 20px; padding: 20px; border-radius: 10px; background-color: #222; display: inline-block; }"
+           "#github { position: absolute; top: 10px; left: 10px; background: #333; padding: 8px; border-radius: 5px; text-decoration: none; color: white; }"
            "</style>"
            "</head>"
            "<body>"
+           "<a id='github' href='https://github.com/0promil' target='_blank'>GitHub</a>"
            "<h1>SSH Tracker Setup</h1>"
            "<div id='content'>"
            "<button onclick='showSettings()'>Ayarlar</button>"
@@ -48,6 +75,9 @@ String getHtml() {
            "SSID: <input type='text' name='ssid'><br>"
            "Password: <input type='password' name='password'><br>"
            "Cihaz IP: <input type='text' name='deviceip'><br>"
+           "SSH Sunucu IP: <input type='text' name='sship'><br>"
+           "SSH Port: <input type='text' name='sshport'><br>"
+           "SSH Şifre (Opsiyonel): <input type='password' name='sshpassword'><br>"
            "<input type='submit' value='Bağlan'>"
            "</form>"
            "</div>"
@@ -65,6 +95,10 @@ String getHtml() {
 
 void setup() {
     Serial.begin(115200);
+    if (!LittleFS.begin()) {
+        Serial.println("LittleFS Mount Failed");
+        return;
+    }
     startAP();
 
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -72,10 +106,14 @@ void setup() {
     });
     
     server.on("/connect", HTTP_POST, [](AsyncWebServerRequest *request){
-        if (request->hasParam("ssid", true) && request->hasParam("password", true) && request->hasParam("deviceip", true)) {
+        if (request->hasParam("ssid", true) && request->hasParam("password", true) && request->hasParam("deviceip", true) && request->hasParam("sship", true) && request->hasParam("sshport", true)) {
             userSSID = request->getParam("ssid", true)->value();
             userPassword = request->getParam("password", true)->value();
             deviceIP = request->getParam("deviceip", true)->value();
+            sshServerIP = request->getParam("sship", true)->value();
+            sshServerPort = request->getParam("sshport", true)->value();
+            sshPassword = request->hasParam("sshpassword", true) ? request->getParam("sshpassword", true)->value() : "";
+            
             WiFi.softAPdisconnect(true);
             WiFi.begin(userSSID.c_str(), userPassword.c_str());
             int attempts = 0;
@@ -96,7 +134,7 @@ void setup() {
     });
 
     server.on("/logs", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(200, "text/plain", logs);
+        request->send(200, "text/plain", getLogs());
     });
     
     server.begin();
@@ -104,4 +142,5 @@ void setup() {
 
 void loop() {
     dnsServer.processNextRequest();
+    logSSHConnection("Example SSH connection detected.");
 }
